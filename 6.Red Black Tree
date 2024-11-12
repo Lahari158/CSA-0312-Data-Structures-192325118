@@ -1,0 +1,136 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+enum Color { RED, BLACK };
+
+struct Node {
+    int data;
+    enum Color color;
+    struct Node *left, *right, *parent;
+};
+
+// Function to create a new node with a given value
+struct Node* newNode(int data) {
+    struct Node* node = (struct Node*)malloc(sizeof(struct Node));
+    node->data = data;
+    node->color = RED;
+    node->left = node->right = node->parent = NULL;
+    return node;
+}
+
+// Function for left rotation
+void leftRotate(struct Node** root, struct Node* x) {
+    struct Node* y = x->right;
+    x->right = y->left;
+    if (y->left) y->left->parent = x;
+    y->parent = x->parent;
+    if (!x->parent) *root = y;
+    else if (x == x->parent->left) x->parent->left = y;
+    else x->parent->right = y;
+    y->left = x;
+    x->parent = y;
+}
+
+// Function for right rotation
+void rightRotate(struct Node** root, struct Node* y) {
+    struct Node* x = y->left;
+    y->left = x->right;
+    if (x->right) x->right->parent = y;
+    x->parent = y->parent;
+    if (!y->parent) *root = x;
+    else if (y == y->parent->left) y->parent->left = x;
+    else y->parent->right = x;
+    x->right = y;
+    y->parent = x;
+}
+
+// Function to fix Red-Black Tree violations
+void fixViolation(struct Node** root, struct Node* z) {
+    while (z->parent && z->parent->color == RED) {
+        struct Node* parent = z->parent;
+        struct Node* grandparent = parent->parent;
+
+        if (parent == grandparent->left) {
+            struct Node* uncle = grandparent->right;
+            if (uncle && uncle->color == RED) {
+                grandparent->color = RED;
+                parent->color = uncle->color = BLACK;
+                z = grandparent;
+            } else {
+                if (z == parent->right) {
+                    z = parent;
+                    leftRotate(root, z);
+                }
+                parent->color = BLACK;
+                grandparent->color = RED;
+                rightRotate(root, grandparent);
+            }
+        } else {
+            struct Node* uncle = grandparent->left;
+            if (uncle && uncle->color == RED) {
+                grandparent->color = RED;
+                parent->color = uncle->color = BLACK;
+                z = grandparent;
+            } else {
+                if (z == parent->left) {
+                    z = parent;
+                    rightRotate(root, z);
+                }
+                parent->color = BLACK;
+                grandparent->color = RED;
+                leftRotate(root, grandparent);
+            }
+        }
+    }
+    (*root)->color = BLACK;
+}
+
+// Function to insert a new node with given data
+void insert(struct Node** root, int data) {
+    struct Node* node = newNode(data);
+    struct Node* y = NULL;
+    struct Node* x = *root;
+
+    while (x != NULL) {
+        y = x;
+        if (node->data < x->data)
+            x = x->left;
+        else
+            x = x->right;
+    }
+
+    node->parent = y;
+    if (y == NULL)
+        *root = node;
+    else if (node->data < y->data)
+        y->left = node;
+    else
+        y->right = node;
+
+    fixViolation(root, node);
+}
+
+// Utility function to print the tree structure
+void inorder(struct Node* root) {
+    if (root == NULL) return;
+    inorder(root->left);
+    printf("%d(%s) ", root->data, root->color == RED ? "R" : "B");
+    inorder(root->right);
+}
+
+int main() {
+    struct Node* root = NULL;
+
+    insert(&root, 10);
+    insert(&root, 20);
+    insert(&root, 30);
+    insert(&root, 15);
+    insert(&root, 25);
+    insert(&root, 5);
+
+    printf("Inorder traversal of Red-Black Tree: ");
+    inorder(root);
+    printf("\n");
+
+    return 0;
+}
