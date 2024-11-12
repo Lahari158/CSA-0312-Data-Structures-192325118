@@ -1,0 +1,122 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+struct Node {
+    int key;
+    struct Node *left, *right;
+};
+
+// Function to create a new node
+struct Node* newNode(int key) {
+    struct Node* node = (struct Node*)malloc(sizeof(struct Node));
+    node->key = key;
+    node->left = node->right = NULL;
+    return node;
+}
+
+// Right rotation
+struct Node* rightRotate(struct Node* x) {
+    struct Node* y = x->left;
+    x->left = y->right;
+    y->right = x;
+    return y;
+}
+
+// Left rotation
+struct Node* leftRotate(struct Node* x) {
+    struct Node* y = x->right;
+    x->right = y->left;
+    y->left = x;
+    return y;
+}
+
+// Splay operation to bring the key to root if found, or last accessed node if not found
+struct Node* splay(struct Node* root, int key) {
+    if (!root || root->key == key) return root;
+
+    // Key in left subtree
+    if (key < root->key) {
+        if (!root->left) return root;
+        if (key < root->left->key) {  // Zig-Zig (Left Left)
+            root->left->left = splay(root->left->left, key);
+            root = rightRotate(root);
+        } else if (key > root->left->key) {  // Zig-Zag (Left Right)
+            root->left->right = splay(root->left->right, key);
+            if (root->left->right)
+                root->left = leftRotate(root->left);
+        }
+        return (root->left == NULL) ? root : rightRotate(root);
+    } else {  // Key in right subtree
+        if (!root->right) return root;
+        if (key > root->right->key) {  // Zag-Zag (Right Right)
+            root->right->right = splay(root->right->right, key);
+            root = leftRotate(root);
+        } else if (key < root->right->key) {  // Zag-Zig (Right Left)
+            root->right->left = splay(root->right->left, key);
+            if (root->right->left)
+                root->right = rightRotate(root->right);
+        }
+        return (root->right == NULL) ? root : leftRotate(root);
+    }
+}
+
+// Insert operation with splaying
+struct Node* insert(struct Node* root, int key) {
+    if (!root) return newNode(key);
+
+    root = splay(root, key);
+
+    if (root->key == key) return root;
+
+    struct Node* new_node = newNode(key);
+    if (key < root->key) {
+        new_node->right = root;
+        new_node->left = root->left;
+        root->left = NULL;
+    } else {
+        new_node->left = root;
+        new_node->right = root->right;
+        root->right = NULL;
+    }
+    return new_node;
+}
+
+// Search operation with splaying
+struct Node* search(struct Node* root, int key) {
+    return splay(root, key);
+}
+
+// Inorder traversal to display the tree
+void inorder(struct Node* root) {
+    if (root) {
+        inorder(root->left);
+        printf("%d ", root->key);
+        inorder(root->right);
+    }
+}
+
+int main() {
+    struct Node* root = NULL;
+
+    // Inserting nodes
+    root = insert(root, 10);
+    root = insert(root, 20);
+    root = insert(root, 30);
+    root = insert(root, 25);
+    root = insert(root, 5);
+    root = insert(root, 15);
+
+    printf("Inorder traversal of the Splay Tree: ");
+    inorder(root);
+    printf("\n");
+
+    // Searching a node (splays the node to the root if found)
+    root = search(root, 20);
+    printf("After searching 20, new root is: %d\n", root->key);
+
+    printf("Inorder traversal after splaying 20: ");
+    inorder(root);
+    printf("\n");
+
+    return 0;
+}
